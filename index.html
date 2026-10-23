@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" href="/apple-touch-icon.png">
+<script>
+// 自动生成「I ❤ GILLY」主题图标（若根目录没有 apple-touch-icon.png，则用此脚本兜底）
+(function(){
+  if (document.querySelector('link[rel="apple-touch-icon"][href="/apple-touch-icon.png"]')) {
+    var probe = new Image();
+    probe.onload = function(){ if(probe.naturalWidth>10) return; attachFallback(); };
+    probe.onerror = attachFallback;
+    probe.src = '/apple-touch-icon.png';
+    return;
+  }
+  attachFallback();
+  function attachFallback(){
+    var c = document.createElement('canvas');
+    c.width = c.height = 512;
+    var x = c.getContext('2d');
+    // 浅绿波点背景
+    x.fillStyle = '#b9e3c6';
+    x.fillRect(0,0,512,512);
+    x.fillStyle = '#ffffff';
+    for (var i=0;i<512;i+=52){ for (var j=0;j<512;j+=52){
+      if (((i/52)|0+(j/52)|0)%2===0) x.beginPath(), x.arc(i+26,j+26,9,0,7), x.fill();
+    }}
+    // 像素风爱心
+    var heart = [
+      "..11.11..","1......1.","1......1.","1......1.",
+      "1......1.",".1....1..","..1..1...","...11....",
+      "....1...."
+    ];
+    var u=22, ox=512/2-4*u-6, oy=210;
+    x.fillStyle='#e63950';
+    for (var r=0;r<heart.length;r++){for(var cc=0;cc<heart[r].length;cc++){
+      if(heart[r][cc]==='1') x.fillRect(ox+cc*u, oy+r*u, u, u);
+    }}
+    // 文字 I ❤ GILLY
+    x.fillStyle='#4a2c14';
+    x.textAlign='center';
+    x.textBaseline='middle';
+    x.font='bold 70px "Arial Rounded MT Bold", "PingFang SC", sans-serif';
+    x.fillText('I', 95, 430);
+    x.fillStyle='#e63950';
+    x.fillRect(128,398,34,34);
+    x.fillRect(128,404,34,22);
+    x.fillStyle='#4a2c14';
+    x.fillText('GILLY', 300, 430);
+    var url = c.toDataURL('image/png');
+    var a = document.createElement('link'); a.rel='apple-touch-icon'; a.sizes='180x180'; a.href=url;
+    var b = document.createElement('link'); b.rel='icon'; b.href=url;
+    document.head.appendChild(a); document.head.appendChild(b);
+  }
+})();
+</script>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>读档 · 我的书单</title>
+<style>
+  :root{
+    --bg:#faf8f5; --card:#ffffff; --ink:#2d2d2d; --sub:#999; --line:#eee;
+    --weread:#07c160; --jj:#e63950; --fanqie:#ff6b3d; --douban:#2e963d;
+    --reading:#4a90d9; --done:#48bb78; --abandon:#cbd5e0;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);padding-bottom:80px;}
+  .wrap{max-width:960px;margin:0 auto;padding:0 12px;}
+
+  header{position:sticky;top:0;z-index:50;background:rgba(250,248,245,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);}
+  .brand{display:flex;align-items:baseline;gap:8px;padding:14px 0 6px;}
+  .brand h1{font-size:22px;letter-spacing:.5px;}
+  .brand span{font-size:12px;color:var(--sub);}
+  .stats{display:flex;gap:6px;padding:10px 0;}
+  .stat{flex:1;background:var(--card);border-radius:12px;padding:10px 8px;text-align:center;border:1px solid var(--line);}
+  .stat .num{font-size:20px;font-weight:700;}
+  .stat .num.read{color:var(--done);}
+  .stat .num.reading{color:var(--reading);}
+  .stat .num.abandon{color:var(--abandon);}
+  .stat .lbl{font-size:11px;color:var(--sub);}
+  .bar{display:flex;height:6px;border-radius:3px;overflow:hidden;margin-bottom:10px;}
+  .bar .b-done{background:var(--done);}
+  .bar .b-reading{background:var(--reading);}
+  .bar .b-abandon{background:var(--abandon);}
+
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 0;}
+  .btn{flex:1;min-width:80px;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;color:#fff;background:#333;}
+  .btn.ghost{background:#fff;color:#333;border:1px solid var(--line);}
+  .btn.weread{background:var(--weread);}
+  .btn.jj{background:var(--jj);}
+  .btn.fanqie{background:var(--fanqie);}
+  .btn.douban{background:var(--douban);}
+  .btn:active{transform:scale(.97);}
+
+  .search{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-size:14px;background:#fff;margin-bottom:8px;}
+  .filters{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none;}
+  .filters::-webkit-scrollbar{display:none;}
+  .chip{flex:none;padding:6px 12px;border-radius:20px;background:#fff;border:1px solid var(--line);font-size:12px;color:var(--sub);cursor:pointer;}
+  .chip.active{background:#333;color:#fff;border-color:#333;}
+  .chip.tag{background:#f3f0ea;}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;padding:12px 0;}
+  .book{background:var(--card);border-radius:14px;overflow:hidden;border:1px solid var(--line);cursor:pointer;transition:transform .15s;}
+  .book:active{transform:scale(.97);}
+  .cover{position:relative;aspect-ratio:3/4;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:flex-end;padding:8px;}
+  .cover .ph{color:#fff;font-size:13px;font-weight:600;line-height:1.3;text-shadow:0 1px 3px rgba(0,0,0,.3);}
+  .cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+  .badge{position:absolute;top:8px;left:8px;font-size:10px;padding:2px 7px;border-radius:10px;color:#fff;font-weight:600;}
+  .badge.read{background:var(--done);}
+  .badge.reading{background:var(--reading);}
+  .badge.abandon{background:var(--abandon);}
+  .src{position:absolute;top:8px;right:8px;font-size:9px;padding:2px 6px;border-radius:8px;background:rgba(0,0,0,.5);color:#fff;}
+  .info{padding:8px 10px;}
+  .info .t{font-size:13px;font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:34px;}
+  .info .a{font-size:11px;color:var(--sub);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .info .meta{font-size:11px;color:var(--sub);margin-top:3px;display:flex;justify-content:space-between;}
+  .stars{color:#f5a623;font-size:11px;}
+
+  .empty{text-align:center;padding:60px 20px;color:var(--sub);}
+  .empty .ic{font-size:48px;margin-bottom:10px;}
+
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-end;}
+  .modal.show{display:flex;}
+  .sheet{background:#fff;width:100%;border-radius:20px 20px 0 0;max-height:90vh;overflow-y:auto;padding:20px;animation:slideUp .25s;}
+  @keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+  .sheet h2{font-size:18px;margin-bottom:4px;}
+  .sheet .sub{font-size:12px;color:var(--sub);margin-bottom:16px;}
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:12px;color:var(--sub);margin-bottom:5px;}
+  .field input,.field textarea,.field select{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:14px;font-family:inherit;background:#fafafa;}
+  .field textarea{height:60px;resize:none;}
+  .row2{display:flex;gap:10px;}
+  .row2 .field{flex:1;}
+  .platform-tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+  .platform-tabs .chip{flex:1;min-width:70px;text-align:center;}
+  .fetch-box{background:#f6f4f0;border-radius:10px;padding:10px;margin-bottom:12px;}
+  .fetch-box .tip{font-size:11px;color:var(--sub);margin-top:6px;line-height:1.5;}
+  .fetch-box .tip b{color:#333;}
+  .fetch-box .tip code{background:#fff;padding:1px 5px;border-radius:4px;font-size:10px;word-break:break-all;}
+
+  .detail-cover{width:120px;aspect-ratio:3/4;border-radius:10px;overflow:hidden;margin:0 auto 16px;background:linear-gradient(135deg,#667eea,#764ba2);position:relative;}
+  .detail-cover img{width:100%;height:100%;object-fit:cover;}
+  .detail-cover .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:600;text-align:center;padding:10px;}
+  .detail-title{text-align:center;font-size:20px;font-weight:700;margin-bottom:4px;}
+  .detail-author{text-align:center;font-size:13px;color:var(--sub);margin-bottom:12px;}
+  .detail-tags{text-align:center;margin-bottom:14px;}
+  .detail-tags .tag{display:inline-block;background:#f3f0ea;padding:3px 10px;border-radius:12px;font-size:12px;margin:2px;}
+  .detail-meta{display:flex;justify-content:center;gap:20px;font-size:12px;color:var(--sub);margin-bottom:16px;}
+  .detail-note{background:#fafafa;border-radius:10px;padding:12px;font-size:13px;line-height:1.6;white-space:pre-wrap;margin-bottom:16px;}
+  .detail-actions{display:flex;gap:10px;flex-wrap:wrap;}
+  .detail-actions .btn{flex:1;min-width:100px;}
+  .close-x{position:absolute;top:16px;right:16px;font-size:20px;color:var(--sub);cursor:pointer;z-index:10;}
+
+  .toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none;max-width:80%;text-align:center;}
+  .toast.show{opacity:1;}
+  .spinner{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;vertical-align:middle;margin-right:5px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* 类型库管理 */
+  .typelib{background:#f6f4f0;border-radius:10px;padding:10px;margin-bottom:12px;}
+  .typelib .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .typelib .head span{font-size:12px;color:var(--sub);}
+  .typelib .chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .typelib .chip{font-size:12px;cursor:pointer;user-select:none;}
+  .typelib .chip.sel{background:#333;color:#fff;border-color:#333;}
+  .typelib .chip .x{margin-left:4px;opacity:.6;}
+  .typelib .add{display:flex;gap:6px;margin-top:8px;}
+  .typelib .add input{flex:1;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12px;background:#fff;}
+  .typelib .add button{font-size:12px;padding:6px 12px;border:none;border-radius:8px;background:#333;color:#fff;cursor:pointer;}
+
+  /* 结局/平台/章节行 */
+  .row3{display:flex;gap:8px;}
+  .row3 .field{flex:1;}
+  .radio-group{display:flex;gap:8px;}
+  .radio-group label{flex:1;text-align:center;padding:9px 0;border:1px solid var(--line);border-radius:10px;font-size:13px;color:var(--sub);cursor:pointer;background:#fafafa;}
+  .radio-group input{display:none;}
+  .radio-group input:checked + span{font-weight:600;}
+  .radio-group label:has(input:checked){background:#333;color:#fff;border-color:#333;}
+  .detail-row{display:flex;padding:8px 0;border-bottom:1px dashed var(--line);font-size:13px;}
+  .detail-row .k{width:80px;flex:none;color:var(--sub);}
+  .detail-row .v{flex:1;line-height:1.5;}
+  .tag.he{background:#fef3c7;color:#b45309;}
+  .tag.be{background:#fee2e2;color:#b91c1c;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>读档</h1><span>我的阅读书单</span>
+    </div>
+    <div class="stats">
+      <div class="stat" data-f="all"><div class="num" id="sTotal">0</div><div class="lbl">总书目</div></div>
+      <div class="stat" data-f="read"><div class="num read" id="sRead">0</div><div class="lbl">已读完</div></div>
+      <div class="stat" data-f="reading"><div class="num reading" id="sReading">0</div><div class="lbl">在读中</div></div>
+      <div class="stat" data-f="abandon"><div class="num abandon" id="sAbandon">0</div><div class="lbl">弃坑</div></div>
+    </div>
+    <div class="bar"><div class="b-done" id="barDone"></div><div class="b-reading" id="barReading"></div><div class="b-abandon" id="barAbandon"></div></div>
+    <div class="toolbar">
+      <button class="btn" onclick="openModal('manual')">＋ 手动添加</button>
+      <button class="btn weread" onclick="openModal('weread')">微信读书</button>
+      <button class="btn jj" onclick="openModal('jj')">晋江</button>
+      <button class="btn fanqie" onclick="openModal('fanqie')">番茄</button>
+      <button class="btn ghost" onclick="exportData()">导出</button>
+      <button class="btn ghost" onclick="document.getElementById('importFile').click()">导入</button>
+      <button class="btn ghost" onclick="openTypeLib()">类型库</button>
+      <input type="file" id="importFile" accept=".json" onchange="importData(event)" style="display:none">
+    </div>
+    <input class="search" id="search" placeholder="🔍 搜索书名 / 作者 / 标签 / 短评" oninput="render()">
+    <div class="filters" id="filters"></div>
+  </header>
+
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" style="display:none;">
+    <div class="ic">📚</div>
+    <div>书架空空，去添加第一本书吧</div>
+  </div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="sheet" style="position:relative;">
+    <span class="close-x" onclick="closeModal()">✕</span>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div class="modal" id="typeModal">
+  <div class="sheet" style="position:relative;">
+    <span class="close-x" onclick="closeTypeLib()">✕</span>
+    <div id="typeLibBody"></div>
+  </div>
+</div>
+
+<div class="modal" id="detailModal">
+  <div class="sheet" style="position:relative;">
+    <span class="close-x" onclick="closeModal()">✕</span>
+    <div id="detailBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ 数据层 ============ */
+const STORE_KEY = 'du_dang_books_v1';
+let books = JSON.parse(localStorage.getItem(STORE_KEY) || '[]');
+let filterState = 'all', filterTag = 'all', sortBy = 'date';
+
+// 类型库：用户自己维护，勾选时直接复用
+const TYPE_LIB_KEY = 'du_dang_type_lib_v1';
+let typeLib = JSON.parse(localStorage.getItem(TYPE_LIB_KEY) || '["言情","古言","现言","玄幻","仙侠","悬疑","科幻","纯爱","百合","轻松","虐恋","穿书","重生"]');
+
+function saveTypeLib(){ localStorage.setItem(TYPE_LIB_KEY, JSON.stringify(typeLib)); }
+
+/* ============ 类型库弹窗 ============ */
+function openTypeLib(){
+  document.getElementById('typeModal').classList.add('show');
+  renderTypeLib();
+}
+function closeTypeLib(){ document.getElementById('typeModal').classList.remove('show'); }
+document.getElementById('typeModal').addEventListener('click', e=>{ if(e.target.id==='typeModal') closeTypeLib(); });
+
+function renderTypeLib(){
+  const chips = typeLib.map(t=>`<span class="chip" onclick="toggleTypeLib('${esc(t)}')">#${esc(t)} <span class="x">✕</span></span>`).join('');
+  document.getElementById('typeLibBody').innerHTML = `
+    <h2>类型标签库</h2>
+    <div class="sub">在这里添加的标签，以后添加/编辑书籍时可以直接勾选，无需重复输入</div>
+    <div class="typelib">
+      <div class="chips">${chips || '<span style="font-size:12px;color:#999;">还没有标签，在下方添加</span>'}</div>
+      <div class="add">
+        <input id="newType" placeholder="新类型名，如：马甲文" onkeydown="if(event.key==='Enter')addType()">
+        <button onclick="addType()">添加</button>
+      </div>
+    </div>
+    <div class="toolbar">
+      <button class="btn ghost" onclick="closeTypeLib()">完成</button>
+    </div>
+  `;
+}
+function addType(){
+  const inp = document.getElementById('newType');
+  const v = inp.value.trim();
+  if(!v) return;
+  if(typeLib.includes(v)) return toast('该类型已存在');
+  typeLib.push(v);
+  saveTypeLib();
+  inp.value = '';
+  renderTypeLib();
+  render(); // 刷新编辑表单里的类型勾选区
+}
+function toggleTypeLib(t){
+  typeLib = typeLib.filter(x=>x!==t);
+  saveTypeLib();
+  renderTypeLib();
+  render();
+}
+
+function save(){ localStorage.setItem(STORE_KEY, JSON.stringify(books)); render(); }
+
+/* ============ 工具函数 ============ */
+function toast(msg, ms=2400){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._timer); t._timer = setTimeout(()=>t.classList.remove('show'), ms);
+}
+function esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+function fmtWords(n){
+  if(!n) return '';
+  n = Number(n);
+  if(n >= 10000) return (n/10000).toFixed(1).replace(/\.0$/,'') + ' 万字';
+  return n + ' 字';
+}
+function stars(n){
+  n = Number(n) || 0;
+  if(!n) return '';
+  const full = Math.round(n/2);
+  return '★'.repeat(full) + '☆'.repeat(5-full);
+}
+function coverBg(title){
+  let h = 0; for(let i=0;i<(title||'').length;i++) h = (h*31 + title.charCodeAt(i)) % 360;
+  return `linear-gradient(135deg, hsl(${h},65%,55%), hsl(${(h+40)%360},60%,45%))`;
+}
+// 中文/书名清洗
+function cleanTitle(t){
+  return (t||'').replace(/\s*\(.*?\)\s*$/,'').replace(/\s*（.*?）\s*$/,'').replace(/《|》/g,'').trim();
+}
+
+/* ============ 三大平台抓取（CORS 代理方案） ============ */
+const PROXIES = [
+  u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
+  u => 'https://thingproxy.freeboard.io/fetch/' + u,
+  u => 'https://corsproxy.io/?url=' + encodeURIComponent(u)
+];
+
+async function fetchWithProxy(url, retry=0){
+  try{
+    const ctrl = new AbortController();
+    const timer = setTimeout(()=>ctrl.abort(), 12000);
+    const res = await fetch(PROXIES[retry%PROXIES.length](url), {signal: ctrl.signal});
+    clearTimeout(timer);
+    if(!res.ok) throw new Error('http'+res.status);
+    return await res.text();
+  }catch(e){
+    if(retry < PROXIES.length - 1) return fetchWithProxy(url, retry + 1);
+    throw e;
+  }
+}
+
+// 通用：从 HTML 抽 <meta property="og:xxx" content="yyy">
+function meta(doc, name){
+  const m = doc.querySelector(`meta[property="og:${name}"], meta[name="og:${name}"], meta[itemprop="${name}"]`);
+  return m ? m.getAttribute('content') || '' : '';
+}
+function parseHtml(html){
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  return doc;
+}
+
+/* ---- 微信读书 ---- */
+// 支持链接形如：https://weread.qq.com/web/bookDetail/xxx 或 /web/reader/xxx
+async function fetchWeread(url){
+  const html = await fetchWithProxy(url);
+  const doc = parseHtml(html);
+  // 微信读书正文是 SPA，OG 标签常含书名；正文里藏 JSON 数据
+  let title = meta(doc,'title') || meta(doc,'book:title') || '';
+  let author = meta(doc,'book:author') || meta(doc,'author') || '';
+  let cover = meta(doc,'image') || '';
+  let desc = meta(doc,'description') || '';
+
+  // 尝试从内联 JSON 补充
+  const m = html.match(/window\.__INITIAL_STATE__\s*=\s*({[\s\S]*?})\s*<\/script>/)
+          || html.match(/bookInfo\s*=\s*({[\s\S]*?})\s*;/)
+          || html.match(/"book":\s*({[\s\S]*?"bookId"[\s\S]*?})\s*,\s*"chapterInfo"/);
+  if(m){
+    try{
+      const obj = JSON.parse(m[1].replace(/,\s*$/,''));
+      const b = obj.bookInfo || obj.book || obj;
+      if(b){
+        title = title || b.title || b.bookName || '';
+        author = author || b.author || b.authorName || '';
+        cover = cover || b.cover || b.coverImg || b.pic || '';
+        desc = desc || b.intro || b.description || b.desc || '';
+      }
+    }catch(e){}
+  }
+  // 兜底：从 body 文字抽
+  if(!title){ const t = doc.querySelector('.wr_bookTitle, .book-title, h1'); if(t) title = t.textContent; }
+  if(!author){ const a = doc.querySelector('.wr_author, .author'); if(a) author = a.textContent; }
+
+  cover = cover.replace(/\/s_\d+$/,''); // 去缩略后缀
+  return {
+    title: cleanTitle(title) || '微信读书书籍',
+    author: (author||'').replace(/^作者[：:]/,'').trim(),
+    cover,
+    desc: desc.trim(),
+    source: 'weread',
+    sourceUrl: url
+  };
+}
+
+/* ---- 晋江文学城 ---- */
+// 支持：https://www.jjwxc.net/onebook.php?novelid=xxxx 或 /book2/xxxx
+async function fetchJj(url){
+  const html = await fetchWithProxy(url);
+  const doc = parseHtml(html);
+  let title = meta(doc,'title') || '';
+  let author = '', cover = meta(doc,'image') || '', desc = meta(doc,'description') || '';
+
+  // 晋江标题常为 "书名 - 作者 - 晋江文学城"
+  let t = title.replace(/\s*-\s*晋江文学城.*$/,'')
+               .replace(/\s*-\s*JJWXC.*$/i,'')
+               .replace(/\s*-\s*[\u4e00-\u9fa5]+\s*$/,'');
+  // 拆作者：常见 "书名 作者" 或 "书名 - 作者"
+  let parts = t.split(/\s*-\s*|\s{2,}/);
+  if(parts.length >= 2){ title = parts[0]; author = parts.slice(1).join(' '); }
+  else { title = t; }
+
+  // 正文表格里抽字段
+  const cells = doc.querySelectorAll('td, .novelname, .novelauthor');
+  cells.forEach(c=>{
+    const tx = c.textContent.trim();
+    if(/^作\s*者/.test(tx)){ const a = tx.split(/[:：]/)[1]; if(a && !author) author = a; }
+    if(/^文章字数/.test(tx)){ const w = tx.match(/([\d,]+)/); if(w) window._jjWords = w[1].replace(/,/g,''); }
+    if(/^文案/.test(tx)){ const d = c.nextElementSibling; if(d && !desc) desc = d.textContent.trim(); }
+  });
+  // 封面
+  if(!cover){
+    const img = doc.querySelector('.noveldefaultimage img, .novelimage img, img[src*="novel"]');
+    if(img) cover = img.getAttribute('src') || '';
+  }
+  // 正文小说名
+  const tn = doc.querySelector('.novelnameone, .novelname');
+  if(tn && !title.includes(tn.textContent.trim())) title = tn.textContent.trim();
+
+  return {
+    title: cleanTitle(title) || '晋江小说',
+    author: author.trim(),
+    cover: cover.startsWith('//') ? 'https:'+cover : cover,
+    desc: desc.replace(/^文案[：:]\s*/,'').trim(),
+    source: 'jj',
+    sourceUrl: url
+  };
+}
+
+/* ---- 番茄小说 ---- */
+// 支持：https://fanqienovel.com/page/xxxxxx 或 fanqienovel.com/book/xxxx
+async function fetchFanqie(url){
+  const html = await fetchWithProxy(url);
+  const doc = parseHtml(html);
+  let title = meta(doc,'title') || '';
+  let author = meta(doc,'author') || '';
+  let cover = meta(doc,'image') || '';
+  let desc = meta(doc,'description') || '';
+
+  // 标题常含 "《书名》_作者_番茄小说网" 或 "书名_作者"
+  let t = title.replace(/\s*[-_]\s*番茄小说网.*$/,'')
+               .replace(/\s*[-_]\s*番茄.*$/,'')
+               .replace(/\s*[-_]\s*[\u4e00-\u9fa5]{2,6}\s*$/,'')
+               .trim();
+  const bookMatch = t.match(/《(.+?)》/);
+  if(bookMatch){ title = bookMatch[1]; }
+  else {
+    const ps = t.split(/\s*[-_]\s*/);
+    if(ps.length>=2){ title = ps[0]; author = author || ps.slice(1).join(' '); }
+    else title = t;
+  }
+  // 内联 JSON
+  const m = html.match(/window\.__INITIAL_STATE__\s*=\s*({[\s\S]*?})\s*<\/script>/)
+          || html.match(/bookInfo\s*=\s*({[\s\S]*?})\s*;?$/m);
+  if(m){
+    try{
+      const obj = JSON.parse(m[1].replace(/;\s*$/,''));
+      const b = obj.bookInfo || obj.book || obj.item || obj;
+      if(b && typeof b === 'object'){
+        title = title || b.bookName || b.title || b.name || '';
+        author = author || b.authorName || b.author || (b.author && b.author.name) || '';
+        cover = cover || b.coverImg || b.cover || b.pic || '';
+        desc = desc || b.intro || b.description || b.desc || '';
+      }
+    }catch(e){}
+  }
+  // DOM 兜底
+  if(!title){ const x = doc.querySelector('h1, .book-name, .novel-title'); if(x) title = x.textContent; }
+  if(!author){ const x = doc.querySelector('.author-name, .writer-name, [class*="author"]'); if(x) author = x.textContent; }
+  if(!cover){ const x = doc.querySelector('.book-cover img, .cover img, img[src*="book"]'); if(x) cover = x.getAttribute('src')||''; }
+
+  return {
+    title: cleanTitle(title) || '番茄小说',
+    author: author.replace(/^作者[：:]/,'').trim(),
+    cover,
+    desc: desc.trim(),
+    source: 'fanqie',
+    sourceUrl: url
+  };
+}
+
+/* ---- 统一入口 ---- */
+async function fetchByPlatform(platform, url, btn){
+  url = url.trim();
+  if(!url) return toast('请先粘贴书籍链接');
+  const handlers = {
+    weread: { fn: fetchWeread, label: '微信读书' },
+    jj:     { fn: fetchJj,     label: '晋江文学城' },
+    fanqie: { fn: fetchFanqie, label: '番茄小说' },
+    douban: { fn: fetchDouban, label: '豆瓣' }
+  };
+  const h = handlers[platform];
+  if(!h) throw new Error('未知平台');
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>正在抓取 ' + h.label + '…';
+  try{
+    const data = await h.fn(url);
+    if(!data.title || data.title.length < 1) throw new Error('未解析到书名，请检查链接或手动填写');
+    pending = Object.assign({}, pending, data);
+    renderForm();
+    toast('✅ 已抓取，请核对后保存');
+  }catch(e){
+    console.error(e);
+    toast('❌ 抓取失败：' + (e.message || '代理不可用，请手动填写'));
+  }finally{
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+  }
+}
+
+/* ---- 豆瓣（保留原有功能） ---- */
+async function fetchDouban(url){
+  const html = await fetchWithProxy(url);
+  const doc = parseHtml(html);
+  let title = meta(doc,'title') || '';
+  let author = meta(doc,'author') || meta(doc,'book:author') || '';
+  let cover = meta(doc,'image') || '';
+  let desc = meta(doc,'description') || '';
+  let words = '';
+  // 豆瓣标题常含 " (作者)" 后缀
+  const tm = title.match(/^(.+?)\s*\((.+?)\)\s*$/);
+  if(tm){ title = tm[1]; if(!author) author = tm[2]; }
+  const info = doc.querySelector('#info');
+  if(info){
+    const tx = info.textContent;
+    const am = tx.match(/作者(?:译者)?[：:]\s*(.+)/); if(am) author = am[1].split(/[\n\/]/)[0].trim();
+    const wm = tx.match(/页数[：:]\s*(\d+)/); if(wm) words = String(Number(wm[1])*1000);
+  }
+  return { title: cleanTitle(title), author: author.trim(), cover, desc: desc.trim(), words, source:'douban', sourceUrl:url };
+}
+
+/* ============ 表单/弹窗 ============ */
+let pending = {};
+let editingId = null;
+
+function openModal(platform){
+  editingId = null;
+  pending = {};
+  document.getElementById('modal').classList.add('show');
+  renderForm(platform);
+}
+function closeModal(){
+  document.getElementById('modal').classList.remove('show');
+  document.getElementById('detailModal').classList.remove('show');
+}
+document.getElementById('modal').addEventListener('click', e=>{ if(e.target.id==='modal') closeModal(); });
+document.getElementById('detailModal').addEventListener('click', e=>{ if(e.target.id==='detailModal') closeModal(); });
+
+function renderForm(platform){
+  platform = platform || pending._platform || 'manual';
+  pending._platform = platform;
+
+  const tabs = [
+    ['manual','✍️ 手动'],['weread','微信读书'],['jj','晋江'],['fanqie','番茄'],['douban','豆瓣']
+  ].map(([k,l])=>`<span class="chip ${k===platform?'active':''}" style="background:${k===platform?colorOf(k):'#fff'};color:${k===platform?'#fff':'#666'};border-color:${colorOf(k)}" onclick="renderForm('${k}')">${l}</span>`).join('');
+
+  let urlBox = '';
+  if(platform !== 'manual'){
+    urlBox = `
+      <div class="fetch-box">
+        <div class="field" style="margin:0;">
+          <label>粘贴${labelOf(platform)}书籍链接</label>
+          <input id="fUrl" type="url" placeholder="${hintOf(platform)}" value="${pending.sourceUrl||''}">
+        </div>
+        <button class="btn" style="width:100%;margin-top:8px;background:${colorOf(platform)};" id="fetchBtn" onclick="fetchByPlatform('${platform}',document.getElementById('fUrl').value,this)">🔗 自动抓取</button>
+        <div class="tip">${tipOf(platform)}</div>
+      </div>`;
+  }
+
+  document.getElementById('modalBody').innerHTML = `
+    <h2>${editingId?'编辑书籍':'添加书籍'}</h2>
+    <div class="sub">${platform==='manual'?'手动录入完整信息':'粘贴链接自动填充，再补全细节'}</div>
+    <div class="platform-tabs">${tabs}</div>
+    ${urlBox}
+    <div class="field"><label>书名 *</label><input id="fTitle" value="${esc(pending.title||'')}" placeholder="必填"></div>
+    <div class="field"><label>作者</label><input id="fAuthor" value="${esc(pending.author||'')}"></div>
+    <div class="field"><label>封面图链接</label><input id="fCover" value="${esc(pending.cover||'')}" placeholder="留空则生成渐变封面"></div>
+    <div class="field"><label>状态</label>
+      <select id="fStatus">
+        <option value="reading" ${pending.status==='reading'?'selected':''}>📖 在读</option>
+        <option value="read" ${pending.status==='read'?'selected':''}>✅ 已读</option>
+        <option value="abandon" ${pending.status==='abandon'?'selected':''}>🕳 弃坑</option>
+      </select>
+    </div>
+    <div class="row2">
+      <div class="field"><label>字数</label><input id="fWords" type="number" value="${pending.words||''}" placeholder="如 300000"></div>
+      <div class="field"><label>我的评分</label><input id="fRating" type="number" step="0.5" min="0" max="10" value="${pending.rating||''}" placeholder="0-10"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>开始日期</label><input id="fStart" type="date" value="${pending.startDate||''}"></div>
+      <div class="field"><label>读完日期</label><input id="fEnd" type="date" value="${pending.endDate||''}"></div>
+    </div>
+    <div class="field"><label>标签（逗号分隔）</label><input id="fTags" value="${esc((pending.tags||[]).join(', '))}" placeholder="如：科幻, 年度十佳"></div>
+
+    <h3 style="font-size:13px;color:var(--sub);margin:6px 0 8px;">📌 更多字段（言情/网文常用）</h3>
+    <div class="row2">
+      <div class="field"><label>发布平台</label>
+        <select id="fPlatform">
+          <option value="">— 未填 —</option>
+          ${['晋江文学城','起点中文网','番茄小说','七猫小说','微信读书','豆瓣','其他'].map(p=>`<option value="${p}" ${pending.platform===p?'selected':''}>${p}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field"><label>读到章节</label><input id="fChapter" value="${esc(pending.chapter||'')}" placeholder="如：第128章 / 32%"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>女主角</label><input id="fHeroine" value="${esc(pending.heroine||'')}" placeholder="如：林晚"></div>
+      <div class="field"><label>男主角</label><input id="fHero" value="${esc(pending.hero||'')}" placeholder="如：顾景琛"></div>
+    </div>
+
+    <div class="typelib">
+      <div class="head"><span>类型（可多选 · 从标签库勾选）</span><a href="javascript:openTypeLib();" style="font-size:12px;color:#4a90d9;text-decoration:none;">管理标签库</a></div>
+      <div class="chips" id="typeChips">
+        ${typeLib.map(t=>`<span class="chip ${((pending.types||[]).includes(t))?'sel':''}" onclick="toggleType('${esc(t)}')">#${esc(t)}</span>`).join('')}
+      </div>
+    </div>
+
+    <div class="field"><label>结局（单选）</label>
+      <div class="radio-group">
+        <label><input type="radio" name="ending" value="HE" ${pending.ending==='HE'?'checked':''}><span>😊 HE（圆满）</span></label>
+        <label><input type="radio" name="ending" value="BE" ${pending.ending==='BE'?'checked':''}><span>💔 BE（悲剧）</span></label>
+        <label><input type="radio" name="ending" value="" ${!pending.ending?'checked':''}><span>❓ 未定/未知</span></label>
+      </div>
+    </div>
+
+    <div class="field"><label>短评</label><textarea id="fNote" placeholder="一句话感受...">${esc(pending.note||'')}</textarea></div>
+    <div class="toolbar">
+      <button class="btn" onclick="saveForm()">${editingId?'保存修改':'加入书单'}</button>
+      <button class="btn ghost" onclick="closeModal()">取消</button>
+    </div>
+  `;
+}
+function colorOf(p){ return ({weread:'#07c160',jj:'#e63950',fanqie:'#ff6b3d',douban:'#2e963d',manual:'#333'})[p]||'#333'; }
+function labelOf(p){ return ({weread:'微信读书',jj:'晋江文学城',fanqie:'番茄小说',douban:'豆瓣'})[p]||''; }
+function hintOf(p){
+  return ({weread:'https://weread.qq.com/web/bookDetail/...',jj:'https://www.jjwxc.net/onebook.php?novelid=...',fanqie:'https://fanqienovel.com/page/...',douban:'https://book.douban.com/subject/...'})[p]||'';
+}
+function tipOf(p){
+  if(p==='weread') return '进入微信读书网页版 → 点开一本书 → 复制地址栏链接。<br><b>小字：</b>微信读书页面是动态渲染，部分书籍抓不到封面/字数时请手动补一下。';
+  if(p==='jj') return '晋江书籍页地址栏里的链接直接复制即可，<b>支持章节页和书页</b>两种链接。';
+  if(p==='fanqie') return '在番茄小说网页版打开任意书籍详情页，复制地址栏链接。';
+  if(p==='douban') return '豆瓣书页链接，含书名、作者、评分、简介。';
+  return '';
+}
+
+function toggleType(t){
+  const arr = pending.types || [];
+  const i = arr.indexOf(t);
+  if(i>-1) arr.splice(i,1); else arr.push(t);
+  pending.types = arr;
+  // 只刷新类型勾选区，不重建整个表单（避免输入内容丢失）
+  document.querySelectorAll('#typeChips .chip').forEach(c=>{
+    const name = c.textContent.replace(/^#/,'').trim();
+    c.classList.toggle('sel', arr.includes(name));
+  });
+}
+
+function collectForm(){
+  const g = id => document.getElementById(id).value.trim();
+  const status = g('fStatus');
+  const book = Object.assign({}, pending, {
+    title: g('fTitle'),
+    author: g('fAuthor'),
+    cover: g('fCover'),
+    status,
+    words: g('fWords') ? Number(g('fWords')) : '',
+    rating: g('fRating') ? Number(g('fRating')) : '',
+    startDate: g('fStart'),
+    endDate: status==='read' ? (g('fEnd') || todayStr()) : g('fEnd'),
+    tags: g('fTags') ? g('fTags').split(/[,，]/).map(t=>t.trim()).filter(Boolean) : [],
+    platform: g('fPlatform'),
+    chapter: g('fChapter'),
+    heroine: g('fHeroine'),
+    hero: g('fHero'),
+    types: pending.types || [],
+    ending: document.querySelector('input[name="ending"]:checked').value,
+    note: g('fNote')
+  });
+  return book;
+}
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+
+function saveForm(){
+  const book = collectForm();
+  if(!book.title) return toast('书名不能为空');
+  if(book.rating && (book.rating<0 || book.rating>10)) return toast('评分范围 0-10');
+  if(editingId){
+    const i = books.findIndex(b=>b.id===editingId);
+    if(i>-1) books[i] = Object.assign(books[i], book);
+    toast('已更新');
+  }else{
+    book.id = Date.now();
+    if(!book.startDate) book.startDate = todayStr();
+    if(!book.source) book.source = pending._platform || 'manual';
+    books.unshift(book);
+    toast('已加入书单');
+  }
+  save();
+  closeModal();
+}
+
+/* ============ 列表渲染 ============ */
+function filtered(){
+  const kw = document.getElementById('search').value.toLowerCase();
+  let list = books.filter(b=>{
+    if(filterState!=='all' && b.status!==filterState) return false;
+    if(filterTag!=='all' && !(b.tags||[]).includes(filterTag)) return false;
+    if(kw){
+      const hay = [b.title,b.author,b.note,b.heroine,b.hero,b.platform,(b.tags||[]).join(' '),(b.types||[]).join(' '),b.ending,b.desc||''].join(' ').toLowerCase();
+      if(!hay.includes(kw)) return false;
+    }
+    return true;
+  });
+  list.sort((a,b)=>{
+    if(sortBy==='rating') return (b.rating||0)-(a.rating||0);
+    if(sortBy==='words') return (b.words||0)-(a.words||0);
+    return (b.endDate||b.startDate||'').localeCompare(a.endDate||a.startDate||'');
+  });
+  return list;
+}
+
+function render(){
+  // 统计
+  const all = books.length, r = books.filter(b=>b.status==='read').length,
+        rd = books.filter(b=>b.status==='reading').length, ab = books.filter(b=>b.status==='abandon').length;
+  document.getElementById('sTotal').textContent = all;
+  document.getElementById('sRead').textContent = r;
+  document.getElementById('sReading').textContent = rd;
+  document.getElementById('sAbandon').textContent = ab;
+  document.getElementById('barDone').style.width = all?(r/all*100):0+'%';
+  document.getElementById('barReading').style.width = all?(rd/all*100):0+'%';
+  document.getElementById('barAbandon').style.width = all?(ab/all*100):0+'%';
+
+  // 筛选条
+  const tags = [...new Set(books.flatMap(b=>(b.tags||[])))];
+  const chips = [`<span class="chip ${filterTag==='all'?'active':''}" onclick="setTag('all')">全部标签</span>`]
+    .concat(tags.map(t=>`<span class="chip tag ${filterTag===t?'active':''}" onclick="setTag('${esc(t)}')">#${esc(t)}</span>`));
+  document.getElementById('filters').innerHTML = chips.join('');
+
+  // 列表
+  const list = filtered();
+  document.getElementById('empty').style.display = list.length ? 'none' : 'block';
+  document.getElementById('grid').innerHTML = list.map(b=>{
+    const srcLabel = ({weread:'读',jj:'晋江',fanqie:'番茄',douban:'豆瓣'})[b.source] || '';
+    return `
+    <div class="book" onclick="openDetail(${b.id})">
+      <div class="cover" style="${b.cover?`background-image:url('${esc(b.cover)}');background-size:cover;background-position:center;`:coverBg(b.title)}">
+        ${b.cover?`<img src="${esc(b.cover)}" onerror="this.style.display='none'">`:`<div class="ph">${esc(b.title)}</div>`}
+        <span class="badge ${b.status}">${b.status==='read'?'已读':b.status==='reading'?'在读':'弃坑'}</span>
+        ${srcLabel?`<span class="src">${srcLabel}</span>`:''}
+      </div>
+      <div class="info">
+        <div class="t">${esc(b.title)}</div>
+        <div class="a">${esc(b.author||'未知作者')}</div>
+        <div class="meta"><span>${fmtWords(b.words)}</span><span class="stars">${stars(b.rating)}</span></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setTag(t){ filterTag = t; render(); }
+
+document.querySelectorAll('.stat').forEach(el=>{
+  el.addEventListener('click', ()=>{ filterState = el.dataset.f; render(); });
+});
+
+/* ============ 详情 ============ */
+function openDetail(id){
+  const b = books.find(x=>x.id===id);
+  if(!b) return;
+  const srcLabel = ({weread:'来自微信读书',jj:'来自晋江文学城',fanqie:'来自番茄小说',douban:'来自豆瓣'})[b.source]||'';
+  document.getElementById('detailBody').innerHTML = `
+    <div class="detail-cover" style="${b.cover?`background-image:url('${esc(b.cover)}');background-size:cover;background-position:center;`:coverBg(b.title)}">
+      ${b.cover?`<img src="${esc(b.cover)}" onerror="this.style.display='none'">`:`<div class="ph">${esc(b.title)}</div>`}
+    </div>
+    <div class="detail-title">${esc(b.title)}</div>
+    <div class="detail-author">${esc(b.author||'未知作者')}${srcLabel?`<br><span style="font-size:11px;color:#bbb;">${srcLabel}</span>`:''}</div>
+    <div class="detail-tags">${(b.tags||[]).map(t=>`<span class="tag">#${esc(t)}</span>`).join('')}</div>
+    <div class="detail-meta">
+      <span>${b.status==='read'?'已读':b.status==='reading'?'在读中':'已弃坑'}</span>
+      <span>${fmtWords(b.words)}</span>
+      <span class="stars">${stars(b.rating)}</span>
+      ${b.startDate?`<span>${b.startDate}${b.endDate?' → '+b.endDate:''}</span>`:''}
+    </div>
+    ${b.desc?`<div class="detail-note" style="white-space:normal;">${esc(b.desc).replace(/\n/g,'<br>')}</div>`:''}
+    ${(b.platform||b.chapter||b.heroine||b.hero||(b.types||[]).length||b.ending)?`
+    <div style="background:#fafafa;border-radius:10px;padding:12px;margin-bottom:16px;">
+      ${b.platform?`<div class="detail-row"><span class="k">发布平台</span><span class="v">${esc(b.platform)}</span></div>`:''}
+      ${b.chapter?`<div class="detail-row"><span class="k">读到章节</span><span class="v">${esc(b.chapter)}</span></div>`:''}
+      ${b.heroine?`<div class="detail-row"><span class="k">女主角</span><span class="v">${esc(b.heroine)}</span></div>`:''}
+      ${b.hero?`<div class="detail-row"><span class="k">男主角</span><span class="v">${esc(b.hero)}</span></div>`:''}
+      ${(b.types||[]).length?`<div class="detail-row"><span class="k">类型</span><span class="v">${b.types.map(t=>`<span class="tag">#${esc(t)}</span>`).join(' ')}</span></div>`:''}
+      ${b.ending?`<div class="detail-row"><span class="k">结局</span><span class="v"><span class="tag ${b.ending==='HE'?'he':'be'}">${b.ending==='HE'?'😊 HE 圆满':'💔 BE 悲剧'}</span></span></div>`:''}
+    </div>`:''}
+    ${b.note?`<div class="detail-note">💬 ${esc(b.note).replace(/\n/g,'<br>')}</div>`:''}
+    <div class="detail-actions">
+      <button class="btn" onclick="cycleStatus(${b.id})">切换状态</button>
+      <button class="btn ghost" onclick="editBook(${b.id})">编辑</button>
+      <button class="btn" style="background:#e53e3e;" onclick="delBook(${b.id})">删除</button>
+    </div>`;
+  document.getElementById('detailModal').classList.add('show');
+}
+function editBook(id){
+  const b = books.find(x=>x.id===id);
+  if(!b) return;
+  editingId = id; pending = Object.assign({}, b);
+  closeModal();
+  document.getElementById('modal').classList.add('show');
+  renderForm('manual');
+}
+function cycleStatus(id){
+  const b = books.find(x=>x.id===id);
+  if(!b) return;
+  const order = ['reading','read','abandon'];
+  b.status = order[(order.indexOf(b.status)+1)%3];
+  if(b.status==='read' && !b.endDate) b.endDate = todayStr();
+  save(); closeModal(); toast('状态已更新');
+}
+function delBook(id){
+  if(!confirm('确定删除这本书吗？')) return;
+  books = books.filter(b=>b.id!==id); save(); closeModal(); toast('已删除');
+}
+
+/* ============ 导入导出 ============ */
+function exportData(){
+  const blob = new Blob([JSON.stringify(books, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `读档书单_${todayStr()}.json`;
+  a.click();
+  toast('已导出');
+}
+function importData(e){
+  const f = e.target.files[0]; if(!f) return;
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    try{
+      const data = JSON.parse(ev.target.result);
+      if(!Array.isArray(data)) throw new Error('格式错误');
+      if(confirm(`导入 ${data.length} 本书，确定合并到现有书单吗？取消则覆盖。`)){
+        const ids = new Set(books.map(b=>b.id));
+        data.forEach(d=>{ if(!ids.has(d.id)){ books.push(d); ids.add(d.id); } });
+      }else{
+        books = data;
+      }
+      save(); toast('导入成功');
+    }catch(err){ toast('文件格式错误：' + err.message); }
+  };
+  reader.readAsText(f);
+  e.target.value = '';
+}
+
+render();
+</script>
+</body>
+</html>
